@@ -316,8 +316,8 @@ class AgentConditionCache extends AbstractConditionCache {
                 if (eventDetails == null) {
                     cacheElement = new EventCacheElement(alertConditionOperator, eventSeverity, alertConditionId);
                 } else {
-                    cacheElement = new EventCacheElement(alertConditionOperator, eventDetails, eventSeverity,
-                        alertConditionId);
+                    cacheElement = new EventCacheElement(alertConditionOperator, eventDetails,
+                        alertCondition.getComparator(), eventSeverity, alertConditionId);
                 }
             } catch (InvalidCacheElementException icee) {
                 log.info("Failed to create EventCacheElement with parameters: "
@@ -528,7 +528,7 @@ class AgentConditionCache extends AbstractConditionCache {
                 i.remove();
                 int matched = stats.matched;
                 processCacheElements(cacheElements, event.getSeverity(), event.getTimestamp(), stats,
-                    event.getDetail(), "sourceLocation=" + source.getLocation());
+                    "sourceLocation=" + source.getLocation(), event.getDetail());
                 if (matched < stats.matched) {
                     break;
                 }

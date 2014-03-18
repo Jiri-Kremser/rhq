@@ -114,6 +114,7 @@ public class ConditionEditor extends EnhancedVLayout {
     private static final String OPERATION_RESULTS_ITEMNAME = "operationResults";
     private static final String EVENT_SEVERITY_ITEMNAME = "eventSeverity";
     private static final String EVENT_REGEX_ITEMNAME = "eventRegex";
+    private static final String EVENT_SOURCE_PATH_REGEX_ITEMNAME = "eventSourcePathRegex";
     private static final String DRIFT_DEFNAME_REGEX_ITEMNAME = "driftDefNameRegex";
     private static final String DRIFT_PATHNAME_REGEX_ITEMNAME = "driftPathNameRegex";
     private static final String RANGE_METRIC_ITEMNAME = "rangeMetric";
@@ -499,7 +500,7 @@ public class ConditionEditor extends EnhancedVLayout {
 
             case EVENT: {
                 newCondition.setName(form.getValueAsString(EVENT_SEVERITY_ITEMNAME));
-                newCondition.setComparator(null);
+                newCondition.setComparator(form.getValueAsString(EVENT_SOURCE_PATH_REGEX_ITEMNAME));
                 newCondition.setThreshold(null);
                 newCondition.setOption(form.getValueAsString(EVENT_REGEX_ITEMNAME));
                 newCondition.setMeasurementDefinition(null);
@@ -1053,6 +1054,21 @@ public class ConditionEditor extends EnhancedVLayout {
             eventRegex.setDefaultValue(existingCondition.getOption());
         }
         formItems.add(eventRegex);
+        
+        TextItem eventSourcePathRegex = new TextItem(EVENT_SOURCE_PATH_REGEX_ITEMNAME,
+            MSG.view_inventory_eventHistory_sourceLocation() + " "
+                + MSG.view_alert_definition_condition_editor_common_regex());
+        eventSourcePathRegex.setRequired(false);
+        //todo: i18n
+        eventSourcePathRegex.setTooltip("If specified, this is a regular expression that must match a collected"
+            + " event's location path in order to trigger the condition.");
+        eventSourcePathRegex.setHoverWidth(200);
+        eventSourcePathRegex.setWrapTitle(false);
+        eventSourcePathRegex.setShowIfCondition(ifFunc);
+        if (editMode) {
+            eventSourcePathRegex.setDefaultValue(existingCondition.getComparator());
+        }
+        formItems.add(eventSourcePathRegex);
 
         return formItems;
     }

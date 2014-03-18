@@ -2289,6 +2289,9 @@
             <schemaSpec version="2.143">
               <schema-alterColumn table="RHQ_RAW_CONFIG" column="config_ID" nullable="true"/>
             </schemaSpec>
+            <schemaSpec version="2.144">
+              <schema-alterColumn table="RHQ_ALERT_CONDITION_LOG" column="VALUE" columnType="VARCHAR2" precision="320" />
+            </schemaSpec>
         </dbupgrade>
     </target>
 </project>

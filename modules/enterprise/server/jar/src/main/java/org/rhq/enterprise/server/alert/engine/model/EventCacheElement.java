@@ -30,6 +30,7 @@ import org.rhq.core.domain.event.EventSeverity;
 public class EventCacheElement extends AbstractEnumCacheElement<EventSeverity> {
 
     private final Pattern eventDetailsPattern;
+    private final Pattern eventSourceLocationPattern;
 
     private String fixPattern(String regex) {
         boolean sw = regex.startsWith(".*");
@@ -40,30 +41,46 @@ public class EventCacheElement extends AbstractEnumCacheElement<EventSeverity> {
     public EventCacheElement(AlertConditionOperator operator, EventSeverity value, int conditionTriggerId) {
         super(operator, value, conditionTriggerId);
         eventDetailsPattern = null;
+        eventSourceLocationPattern = null;
     }
 
-    public EventCacheElement(AlertConditionOperator operator, String eventDetails, EventSeverity value,
-        int conditionTriggerId) {
+    public EventCacheElement(AlertConditionOperator operator, String eventDetails, String eventSourceLocation, EventSeverity value,
+ int conditionTriggerId) {
         super(operator, eventDetails, value, conditionTriggerId);
         eventDetails = fixPattern(eventDetails);
         eventDetailsPattern = Pattern.compile(eventDetails, Pattern.CASE_INSENSITIVE | Pattern.MULTILINE
             | Pattern.DOTALL);
+        if (eventSourceLocation != null && !eventSourceLocation.isEmpty()) {
+            eventSourceLocation = fixPattern(eventSourceLocation);
+            eventSourceLocationPattern = Pattern.compile(eventSourceLocation, Pattern.CASE_INSENSITIVE);
+        } else {
+            eventSourceLocationPattern = null;
+        }
     }
 
     @Override
     public boolean matches(EventSeverity providedValue, Object... extraParams) {
         boolean matches = super.matches(providedValue, extraParams);
-
-        if (matches && eventDetailsPattern != null) {
-            Object firstParam = extraParams[0];
-            if (!(firstParam instanceof String)) {
+        
+        if (matches && eventSourceLocationPattern != null) {
+            Object sourceLocation = extraParams[0];
+            if (!(sourceLocation instanceof String)) {
                 log.error(getClass().getSimpleName() + " expected a String, but received a "
                     + extraParams.getClass().getSimpleName());
             } else {
-                matches = matches && eventDetailsPattern.matcher((String) firstParam).matches();
+                matches = matches && eventSourceLocationPattern.matcher((String) sourceLocation).matches();
             }
         }
 
+        if (matches && eventDetailsPattern != null) {
+            Object details = extraParams[1];
+            if (!(details instanceof String)) {
+                log.error(getClass().getSimpleName() + " expected a String, but received a "
+                    + extraParams.getClass().getSimpleName());
+            } else {
+                matches = matches && eventDetailsPattern.matcher((String) details).matches();
+            }
+        }
         return matches;
     }
 
