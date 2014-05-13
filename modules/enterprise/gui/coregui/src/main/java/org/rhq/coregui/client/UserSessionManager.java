@@ -407,62 +407,80 @@ public class UserSessionManager {
 
         checkLoginStatus(user, password, new AsyncCallback<Subject>() {
             public void onSuccess(final Subject loggedInSubject) {
-                // will build UI if necessary, then fires history event
-                sessionState = State.IS_LOGGED_IN;
+                checkIfLoginWithoutRolesIsEnabled(loggedInSubject, new AsyncCallback<Boolean>() {
+                    public void onSuccess(Boolean blockUser) {
+                        if (!blockUser) {
+                            // oppa gandalf style
+                            Log.warn("User without any role shell not pass!");
+                            sessionState = State.IS_LOGGED_OUT;
+                            new LoginView().showLoginDialog();
+                            return;
+                        }
+                        
+                        // will build UI if necessary, then fires history event
+                        sessionState = State.IS_LOGGED_IN;
 
-                int storedSessionSubjectId = -1;
-                if (sessionSubject != null) {
-                    sessionSubject.getId();
-                }
-
-                //update the sessionSubject appropriately
-                sessionSubject = loggedInSubject;
-                sessionState = State.IS_LOGGED_IN;
-                userPreferences = new UserPreferences(loggedInSubject);
-                userPreferences.setAutomaticPersistence(true);
-
-                GWTServiceLookup.getSystemService().getSessionTimeout(new AsyncCallback<String>() {
-                    @Override
-                    public void onSuccess(String result) {
-                        try {
-                            final long millis = Long.parseLong(result);
-
-                            // let's be safe here
-                            sessionTimeout = (int) millis;
-                            sessionTimeout = (millis != (long) sessionTimeout) ? Integer.MAX_VALUE : sessionTimeout;
-                            sessionTimeout = (sessionTimeout < SESSION_TIMEOUT_MINIMUM) ? SESSION_TIMEOUT_MINIMUM
-                                : sessionTimeout;
-
-                        } catch (NumberFormatException e) {
-                            sessionTimeout = SESSION_TIMEOUT_MINIMUM;
+                        int storedSessionSubjectId = -1;
+                        if (sessionSubject != null) {
+                            sessionSubject.getId();
                         }
 
-                        LoginView.redirectTo(""); // redirect back to the "root" path (coregui/)
-                    }
+                        //update the sessionSubject appropriately
+                        sessionSubject = loggedInSubject;
+                        sessionState = State.IS_LOGGED_IN;
+                        userPreferences = new UserPreferences(loggedInSubject);
+                        userPreferences.setAutomaticPersistence(true);
 
+                        GWTServiceLookup.getSystemService().getSessionTimeout(new AsyncCallback<String>() {
+                            @Override
+                            public void onSuccess(String result) {
+                                try {
+                                    final long millis = Long.parseLong(result);
+
+                                    // let's be safe here
+                                    sessionTimeout = (int) millis;
+                                    sessionTimeout = (millis != (long) sessionTimeout) ? Integer.MAX_VALUE : sessionTimeout;
+                                    sessionTimeout = (sessionTimeout < SESSION_TIMEOUT_MINIMUM) ? SESSION_TIMEOUT_MINIMUM
+                                        : sessionTimeout;
+
+                                } catch (NumberFormatException e) {
+                                    sessionTimeout = SESSION_TIMEOUT_MINIMUM;
+                                }
+
+                                LoginView.redirectTo(""); // redirect back to the "root" path (coregui/)
+                            }
+
+                            @Override
+                            public void onFailure(Throwable caught) {
+                                CoreGUI.getErrorHandler().handleError(MSG.view_admin_systemSettings_cannotLoadSettings(),
+                                    caught);
+                            }
+                        });
+
+                        httpSessionTimer.schedule(SESSION_ACCESS_REFRESH);
+
+                        //conditionally update session information and server side WebUser when updated.
+                        if ((sessionSubject != null) && (loggedInSubject.getId() != storedSessionSubjectId)) {
+                            //update the sessionSubject appropriately
+                            sessionSubject = loggedInSubject;
+                            //update the sessionId
+                            saveSessionId(String.valueOf(loggedInSubject.getSessionId().intValue()));
+                            //Update the portal war WebUser now that we've updated subject+session
+                            scheduleWebUserUpdate(loggedInSubject);
+                        }
+                        
+                        // invalidate the CustomDateRangeState instance
+                        CustomDateRangeState.invalidateInstance();
+
+                        CoreGUI.get().init();
+                    }
+                    
                     @Override
                     public void onFailure(Throwable caught) {
-                        CoreGUI.getErrorHandler().handleError(MSG.view_admin_systemSettings_cannotLoadSettings(),
-                            caught);
+                        Log.error("Failed to contact the backend: " + caught.getMessage(), caught);
+                        new LoginView().showLoginDialog();
                     }
                 });
-
-                httpSessionTimer.schedule(SESSION_ACCESS_REFRESH);
-
-                //conditionally update session information and server side WebUser when updated.
-                if ((sessionSubject != null) && (loggedInSubject.getId() != storedSessionSubjectId)) {
-                    //update the sessionSubject appropriately
-                    sessionSubject = loggedInSubject;
-                    //update the sessionId
-                    saveSessionId(String.valueOf(loggedInSubject.getSessionId().intValue()));
-                    //Update the portal war WebUser now that we've updated subject+session
-                    scheduleWebUserUpdate(loggedInSubject);
-                }
-                
-                // invalidate the CustomDateRangeState instance
-                CustomDateRangeState.invalidateInstance();
-
-                CoreGUI.get().init();
             }
 
             public void onFailure(Throwable caught) {
@@ -473,6 +491,10 @@ public class UserSessionManager {
                 return super.toString() + " UserSessionManager.checkLoginStatus()";
             }
         });
+    }
+    
+    public static void checkIfLoginWithoutRoles(final Subject subject, AsyncCallback<Boolean> callback) {
+        GWTServiceLookup.getSystemService().isLoginWithoutRolesDisabledAndHasAtZeroRoles(subject, callback);
     }
 
     private static void saveSessionId(String sessionId) {

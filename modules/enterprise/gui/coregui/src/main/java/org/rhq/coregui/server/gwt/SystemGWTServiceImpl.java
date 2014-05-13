@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.rhq.core.domain.auth.Subject;
 import org.rhq.core.domain.common.ProductInfo;
 import org.rhq.core.domain.common.ServerDetails;
 import org.rhq.core.domain.common.composite.SystemSetting;
 import org.rhq.core.domain.common.composite.SystemSettings;
+import org.rhq.core.domain.criteria.SubjectCriteria;
+import org.rhq.core.domain.util.PageList;
 import org.rhq.coregui.client.gwt.SystemGWTService;
 import org.rhq.enterprise.server.auth.SubjectManagerLocal;
 import org.rhq.enterprise.server.core.AgentManagerLocal;
@@ -296,5 +299,25 @@ public class SystemGWTServiceImpl extends AbstractGWTServiceImpl implements Syst
             map.put(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
         }
         return map;
+    }
+
+    @Override
+    public boolean isLoginWithoutRolesDisabledAndHasAtZeroRoles(Subject subject) {
+        try {
+            boolean isLoginWithoutRolesDisabled = !systemManager.isLoginWithoutRolesEnabled();
+            boolean hasZeroRoles = true;
+            if (subject.getId() != 0) {
+                SubjectCriteria criteria = new SubjectCriteria();
+                criteria.fetchRoles(true);
+                criteria.addFilterId(subject.getId());
+                PageList<Subject> subjects = subjectManager.findSubjectsByCriteria(subjectManager.getOverlord(),
+                    criteria);
+                hasZeroRoles = null == subjects || subjects.isEmpty()
+                    || (subjects.get(0).getRoles().isEmpty() && subjects.get(0).getLdapRoles().isEmpty());
+            }
+            return isLoginWithoutRolesDisabled && hasZeroRoles;
+        } catch (Exception t) {
+            throw getExceptionToThrowToClient(t);
+        }
     }
 }

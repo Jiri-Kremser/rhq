@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 
+import org.rhq.core.domain.auth.Subject;
 import org.rhq.core.domain.common.ProductInfo;
 import org.rhq.core.domain.common.ServerDetails;
 import org.rhq.core.domain.common.composite.SystemSettings;
@@ -104,4 +105,6 @@ public interface SystemGWTService extends RemoteService {
      * @see SystemGWTService
      */
     void dumpToLog();
+    
+    boolean isLoginWithoutRolesDisabledAndHasAtZeroRoles(Subject subject);
 }
