@@ -565,7 +565,6 @@ public class LoginView extends Canvas {
     }
 
     private void login(final String username, final String password) {
-
         loginButton.setDisabled(true);
 
         try {
@@ -586,7 +585,11 @@ public class LoginView extends Canvas {
                         loginShowing = false;
                         UserSessionManager.login(username, password);
                         setLoginError(null);
-                    } else {
+                    } else if (response.getText().contains("preconfigured roles")) {
+                        form.setFieldErrors("login", "No preconfigured roles", true);
+                        setLoginError("No preconfigured roles");
+                        loginButton.setDisabled(false);
+                    } else {                                                }
                         handleError(statusCode);
                     }
                 }

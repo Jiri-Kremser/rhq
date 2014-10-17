@@ -264,7 +264,7 @@ public class UserSessionManager {
                                         // this means either: a) we mapped the username to a previously registered LDAP
                                         // user but login via LDAP failed, or b) we were not able to map the username
                                         // to any LDAP users, previously registered or not.
-                                        Log.debug("Failed to complete ldap processing for subject: "
+                                        Log.error("Failed to complete ldap processing for subject: "
                                             + caught.getMessage());
                                         //TODO: pass message to login dialog.
                                         new LoginView().showLoginDialog(true);
@@ -307,7 +307,7 @@ public class UserSessionManager {
                                     public void onFailure(Throwable caught) {
                                         CoreGUI.getErrorHandler().handleError(MSG.util_userSession_loadFailSubject(),
                                             caught);
-                                        Log.info("Failed to load user's subject");
+                                        Log.error("Failed to load user's subject: " + caught.getMessage());
                                         //TODO: pass message to login ui.
                                         new LoginView().showLoginDialog(true);
                                         return;
@@ -325,7 +325,7 @@ public class UserSessionManager {
                                         GWTServiceLookup.getSubjectService().processSubjectForLdap(validSessionSubject,
                                             "", new AsyncCallback<Subject>() {
                                                 public void onFailure(Throwable caught) {
-                                                    Log.warn("Errors occurred processing subject for LDAP."
+                                                    Log.error("Errors occurred processing subject for LDAP."
                                                         + caught.getMessage());
                                                     //TODO: pass informative message to Login UI.
                                                     callback.onSuccess(validSessionSubject);

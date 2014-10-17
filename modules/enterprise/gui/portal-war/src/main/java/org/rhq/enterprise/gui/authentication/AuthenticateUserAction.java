@@ -109,6 +109,8 @@ public class AuthenticateUserAction extends TilesAction {
             String msg = e.getMessage().toLowerCase();
             if ((msg.indexOf("username") >= 0) || (msg.indexOf("password") >= 0)) {
                 request.setAttribute(Constants.LOGON_STATUS, "login.info.bad");
+            } else if((msg.indexOf("preconfigured roles") >= 0)) {
+                request.setAttribute(Constants.LOGON_STATUS, "login.noroles");
             } else {
                 log.error("Could not log into the web application", e);
                 request.setAttribute(Constants.LOGON_STATUS, "login.bad.backend");
